@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jovian Zone System - Documentation</title>
+    <style>
+        :root {
+            --bg: #1e1e2e;
+            --bg2: #252538;
+            --bg3: #2e2e44;
+            --fg: #cdd6f4;
+            --fg2: #a6adc8;
+            --accent: #89b4fa;
+            --green: #a6e3a1;
+            --yellow: #f9e2af;
+            --red: #f38ba8;
+            --orange: #fab387;
+            --border: #45475a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            line-height: 1.7;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2.2em; color: var(--accent); margin-bottom: 8px; }
+        h1 small { font-size: 0.4em; color: var(--fg2); font-weight: normal; }
+        h2 {
+            font-size: 1.5em; color: var(--accent); margin: 48px 0 16px;
+            padding-bottom: 8px; border-bottom: 1px solid var(--border);
+        }
+        h3 { font-size: 1.15em; color: var(--yellow); margin: 28px 0 12px; }
+        h4 { font-size: 1em; color: var(--orange); margin: 20px 0 8px; }
+        p { margin: 0 0 14px; color: var(--fg); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code {
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            background: var(--bg3); padding: 2px 6px; border-radius: 4px;
+            font-size: 0.9em; color: var(--green);
+        }
+        pre {
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 16px 20px; overflow-x: auto;
+            margin: 12px 0 20px; line-height: 1.5;
+        }
+        pre code { background: none; padding: 0; color: var(--fg); }
+        table {
+            width: 100%; border-collapse: collapse; margin: 12px 0 20px;
+            font-size: 0.95em;
+        }
+        th {
+            background: var(--bg3); text-align: left; padding: 10px 14px;
+            color: var(--accent); border: 1px solid var(--border);
+        }
+        td { padding: 10px 14px; border: 1px solid var(--border); }
+        tr:nth-child(even) td { background: var(--bg2); }
+        .badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 0.8em; font-weight: 600; margin-right: 6px;
+        }
+        .badge-base { background: #89b4fa33; color: var(--accent); }
+        .badge-modifier { background: #f9e2af33; color: var(--yellow); }
+        .badge-override { background: #a6e3a133; color: var(--green); }
+        .badge-editor { background: #fab38733; color: var(--orange); }
+        .note {
+            background: var(--bg3); border-left: 4px solid var(--accent);
+            padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0;
+        }
+        .warning {
+            background: #f9e2af11; border-left: 4px solid var(--yellow);
+            padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0;
+        }
+        .toc {
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 20px 28px; margin: 24px 0;
+        }
+        .toc h3 { margin-top: 0; color: var(--fg); }
+        .toc ul { list-style: none; padding-left: 0; }
+        .toc li { padding: 4px 0; }
+        .toc li::before { content: "# "; color: var(--border); }
+        ul, ol { margin: 0 0 14px 24px; }
+        li { margin-bottom: 4px; }
+        .key {
+            display: inline-block; background: var(--bg3); border: 1px solid var(--border);
+            border-radius: 4px; padding: 2px 8px; font-size: 0.85em;
+            font-family: monospace; color: var(--fg);
+        }
+        hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+        .section { margin-bottom: 32px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>Jovian Zone System <small>v0.1.0</small></h1>
+<p>A polygon-based zone system for defining map regions with encounter difficulty, modifiers, and safe areas.</p>
+
+<div class="toc">
+    <h3>Table of Contents</h3>
+    <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#setup">Setup &amp; Quick Start</a></li>
+        <li><a href="#editor-window">Zone Editor Window</a></li>
+        <li><a href="#shape-editing">Shape Editing</a></li>
+        <li><a href="#zone-roles">Zone Roles &amp; Resolution</a></li>
+        <li><a href="#settings">Editor Settings</a></li>
+        <li><a href="#runtime-api">Runtime API</a></li>
+        <li><a href="#types">Type Reference</a></li>
+        <li><a href="#utilities">Utility Classes</a></li>
+        <li><a href="#export">JSON Export</a></li>
+        <li><a href="#shortcuts">Keyboard Shortcuts</a></li>
+        <li><a href="#menu">Menu Reference</a></li>
+    </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="overview">Overview</h2>
+<div class="section">
+    <p>The Zone System lets you paint polygon regions on your map and assign encounter rules to each region. At runtime, you query a world position and get back a fully resolved <code>ZoneContext</code> with the encounter table, difficulty tier, and chance.</p>
+
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Three zone roles</strong>: Base, Modifier, and Override for layered encounter design</li>
+        <li><strong>Visual polygon editing</strong>: Drag vertices, insert on edges, delete vertices in the Scene view</li>
+        <li><strong>Concave polygon support</strong>: Ear-clipping triangulation renders any shape correctly</li>
+        <li><strong>Multi-plane support</strong>: XY, XZ, or YZ &mdash; one setting controls everything</li>
+        <li><strong>No physics dependency</strong>: Pure math ray-casting with AABB pre-rejection</li>
+        <li><strong>Save workflow</strong>: Create &rarr; Edit &rarr; Save with duplicate ID/name validation</li>
+        <li><strong>Role-based colors</strong>: Configured in settings, auto-applied on role change</li>
+        <li><strong>Zone duplication</strong>: Independent copies with unique IDs and assets</li>
+        <li><strong>JSON export</strong>: For runtime loading or external tools</li>
+        <li><strong>UPM package</strong>: Standard Unity Package Manager layout</li>
+    </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="setup">Setup &amp; Quick Start</h2>
+<div class="section">
+    <h3>1. Scene Setup</h3>
+    <ol>
+        <li>Create a GameObject and add the <code>ZonesObjectHolder</code> component.</li>
+        <li>Set the <strong>Map Plane</strong> field to match your map orientation.</li>
+    </ol>
+
+    <table>
+        <tr><th>Map Plane</th><th>Use Case</th><th>Axes</th><th>Ignored</th></tr>
+        <tr><td><code>XY</code></td><td>Flat sprite map, UI map</td><td>X, Y</td><td>Z</td></tr>
+        <tr><td><code>XZ</code></td><td>3D world map (standard Unity 3D)</td><td>X, Z</td><td>Y</td></tr>
+        <tr><td><code>YZ</code></td><td>Side-on map</td><td>Y, Z</td><td>X</td></tr>
+    </table>
+
+    <h3>2. Create Your First Zone</h3>
+    <ol>
+        <li>Open <strong>Window &rarr; Zone System &rarr; Zone Editor</strong>.</li>
+        <li>Click <strong>Create New Zone</strong>.</li>
+        <li>Enter a name, select a shape (Square, Circle, or Polygon).</li>
+        <li>Click <strong>Create &amp; Edit</strong>.</li>
+        <li>Edit zone data fields (role, priority, encounter settings).</li>
+        <li>Click <strong>Save Zone</strong> to persist the asset.</li>
+        <li>Use Scene view handles to adjust the polygon shape.</li>
+    </ol>
+
+    <div class="note">
+        <strong>Note:</strong> The zone asset is not saved to disk until you click the Save button. You can edit all fields freely before committing.
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="editor-window">Zone Editor Window</h2>
+<div class="section">
+    <p>The Zone Editor window (<strong>Window &rarr; Zone System &rarr; Zone Editor</strong>) is the primary tool for managing zones.</p>
+
+    <h3>Zone List View</h3>
+    <p>Shows all <code>ZoneInstance</code> objects in the current scene. Each row displays:</p>
+    <ul>
+        <li><strong>Color swatch</strong>: Role-based color from editor settings</li>
+        <li><strong>Zone name</strong> and summary (role, priority, tier, chance)</li>
+        <li><strong>Select</strong> button: Opens the zone for editing</li>
+        <li><strong>Duplicate</strong> button (<code>&#x1F4CB;</code>): Creates an independent copy with a new asset</li>
+        <li><strong>Delete</strong> button (<code>&#x2715;</code>): Removes the zone and its asset</li>
+    </ul>
+    <p>Zones with missing <code>ZoneData</code> show a warning icon with options to add data or delete the zone.</p>
+
+    <h3>Create Zone</h3>
+    <p>Click <strong>Create New Zone</strong> to open the creation dropdown:</p>
+    <ul>
+        <li>Enter a <strong>Zone Name</strong></li>
+        <li>Select a <strong>Shape</strong> (Square, Circle, Polygon)</li>
+        <li>Click <strong>Create &amp; Edit</strong></li>
+    </ul>
+    <p>The zone is created in-memory and enters edit mode immediately. You must click <strong>Save</strong> to persist the asset.</p>
+
+    <h3>Edit Mode</h3>
+    <p>When editing a zone, all <code>ZoneData</code> fields are available inline:</p>
+    <ul>
+        <li><strong>Identity</strong>: Zone ID, Zone Name, Role, Priority, Shape</li>
+        <li><strong>Role-specific fields</strong>: Shown/hidden based on the selected role</li>
+        <li><strong>Save Zone</strong> button: Validates and persists changes</li>
+        <li><strong>Delete Zone</strong> button: Removes the zone entirely</li>
+    </ul>
+
+    <h4>Save Validation</h4>
+    <p>On save, the editor checks for:</p>
+    <ul>
+        <li><strong>Duplicate Zone ID</strong>: No two assets may share the same <code>zoneId</code></li>
+        <li><strong>Duplicate asset name</strong>: No two assets may have the same file name</li>
+    </ul>
+    <p>If a conflict is found, an error is displayed and saving is blocked.</p>
+
+    <h4>Auto-applied Changes on Save</h4>
+    <ul>
+        <li>The <strong>GameObject name</strong> is updated to match the zone name</li>
+        <li>The <strong>asset file</strong> is renamed to match the zone name</li>
+        <li>If the <strong>shape type</strong> was changed, the polygon resets to the new default shape</li>
+    </ul>
+
+    <h3>Export Section</h3>
+    <p>At the bottom of the editor window, expand <strong>Export Zones to JSON</strong> to export all scene zones to a JSON file for runtime loading.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="shape-editing">Shape Editing</h2>
+<div class="section">
+    <p>When a zone is in edit mode, yellow handles appear in the Scene view for each polygon vertex.</p>
+
+    <h3>Controls</h3>
+    <table>
+        <tr><th>Action</th><th>Input</th><th>Description</th></tr>
+        <tr><td>Move vertex</td><td>Drag handle</td><td>Drag any yellow handle to reposition a vertex</td></tr>
+        <tr><td>Insert vertex</td><td><span class="key">Ctrl</span> + Click edge</td><td>Adds a new vertex on the closest edge (cyan highlight shows target)</td></tr>
+        <tr><td>Delete vertex</td><td><span class="key">Shift</span> + Click vertex</td><td>Removes the vertex (minimum 3 vertices). Handles turn red while Shift is held.</td></tr>
+        <tr><td>Stop editing</td><td><span class="key">Esc</span></td><td>Exits shape edit mode</td></tr>
+    </table>
+
+    <h3>Shapes</h3>
+    <table>
+        <tr><th>Shape</th><th>Default</th><th>Notes</th></tr>
+        <tr><td><code>Square</code></td><td>4 vertices, 2-unit half-size</td><td>Can be reshaped into any quad</td></tr>
+        <tr><td><code>Circle</code></td><td>24-segment approximation, radius 2</td><td>Drag the radius handle to resize. Regenerates vertices on radius change.</td></tr>
+        <tr><td><code>Polygon</code></td><td>12 vertices, radius 3</td><td>Fully freeform &mdash; add, remove, and drag vertices freely</td></tr>
+    </table>
+
+    <h3>Additional Tools (Inspector)</h3>
+    <ul>
+        <li><strong>Center Transform</strong>: Moves the GameObject&rsquo;s transform to the polygon&rsquo;s centroid without changing the zone&rsquo;s world position</li>
+        <li><strong>Reset Shape</strong>: Resets the polygon to the default for the current shape type</li>
+        <li><strong>Duplicate Zone</strong>: Creates an independent copy with its own <code>ZoneData</code> asset</li>
+    </ul>
+
+    <div class="note">
+        <strong>Scene interaction:</strong> While in shape edit mode, clicking in the Scene view will not select other objects. The default transform handle is hidden to prevent accidental movement.
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="zone-roles">Zone Roles &amp; Resolution</h2>
+<div class="section">
+    <h3>Roles</h3>
+    <table>
+        <tr><th>Role</th><th>Purpose</th><th>Fields</th></tr>
+        <tr>
+            <td><span class="badge badge-base">Base</span></td>
+            <td>Defines the encounter table and baseline difficulty</td>
+            <td>Encounter Table ID, Difficulty Tier, Encounter Chance</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-modifier">Modifier</span></td>
+            <td>Stacks multiplicatively on top of a Base zone</td>
+            <td>Chance Multiplier, Difficulty Tier Bonus</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-override">Override</span></td>
+            <td>Replaces everything &mdash; towns, story events, safe areas</td>
+            <td>Is Safe Zone, Encounter Table ID, Encounter Chance, Difficulty Tier</td>
+        </tr>
+    </table>
+
+    <h3>Resolution Order</h3>
+    <p>When querying a world position, the <code>ZoneResolver</code> follows this order:</p>
+    <ol>
+        <li>If any <strong>Override</strong> zone is present &rarr; use the highest-priority Override exclusively</li>
+        <li>Find the highest-priority <strong>Base</strong> zone &rarr; encounter table + baseline difficulty</li>
+        <li>Stack all <strong>Modifier</strong> zones multiplicatively on top</li>
+        <li>Clamp and return a <code>ZoneContext</code></li>
+    </ol>
+
+    <h3>Modifier Stacking</h3>
+    <p>Modifiers are multiplicative, so each one is independent:</p>
+    <pre><code>Base chance 0.30  x  Cursed Road 1.8  x  Night Modifier 1.2  =  0.648</code></pre>
+
+    <h3>Priority</h3>
+    <p>Higher priority values take precedence. When multiple zones of the same role overlap, the highest-priority one wins (for Base and Override) or all are stacked (for Modifier).</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="settings">Editor Settings</h2>
+<div class="section">
+    <p>Access via <strong>Window &rarr; Zone System &rarr; Settings</strong>. If no settings asset exists, one is created automatically.</p>
+
+    <h3>Fields</h3>
+    <table>
+        <tr><th>Field</th><th>Description</th><th>Default</th></tr>
+        <tr><td><code>mapPlane</code></td><td>Which two world axes your map lies on</td><td><code>XZ</code></td></tr>
+        <tr><td><code>zoneDataFolder</code></td><td>Folder path where new ZoneData assets are saved</td><td><code>Assets/ZoneData</code></td></tr>
+        <tr><td><code>roleColors</code></td><td>Debug color for each zone role (used in scene rendering)</td><td>Blue (Base), Yellow (Modifier), Green (Override)</td></tr>
+    </table>
+
+    <h3>Role Colors</h3>
+    <p>Each <code>ZoneRole</code> has a configurable color in the settings. When you change a zone&rsquo;s role in the editor, its debug color is automatically updated to match. Colors are used for:</p>
+    <ul>
+        <li>Scene view polygon fill and border</li>
+        <li>Zone list row background tinting</li>
+        <li>Inspector summary background</li>
+        <li>Scene gizmos</li>
+    </ul>
+
+    <div class="note">
+        <strong>Dynamic:</strong> If you add new values to the <code>ZoneRole</code> enum, call <code>SyncRoleEntries()</code> on the settings asset or click the settings menu item &mdash; missing roles will be added with a default gray color.
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="runtime-api">Runtime API</h2>
+<div class="section">
+    <h3>ZoneSystemApi</h3>
+    <p>The main entry point for runtime zone queries.</p>
+
+    <pre><code>// Create the API with a reference to the ZonesObjectHolder
+ZoneSystemApi api = new ZoneSystemApi(zonesObjectHolder);
+
+// Full zone resolution at a world position
+ZoneContext ctx = api.QueryZone(partyWorldPosition);
+
+if(!ctx.isSafe &amp;&amp; Random.value &lt; ctx.finalEncounterChance)
+    TriggerEncounter(ctx.encounterTableId, ctx.finalDifficultyTier);</code></pre>
+
+    <h3>Methods</h3>
+    <table>
+        <tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+        <tr><td><code>QueryZone(Vector3)</code></td><td><code>ZoneContext</code></td><td>Full resolution: finds overlapping zones, applies modifiers, returns final context</td></tr>
+        <tr><td><code>GetOverlappingZones(Vector3)</code></td><td><code>List&lt;ZoneData&gt;</code></td><td>Raw list of all zones containing the position, sorted by descending priority</td></tr>
+        <tr><td><code>IsInSafeZone(Vector3)</code></td><td><code>bool</code></td><td>Quick check &mdash; true if any Override zone with <code>isSafeZone</code> contains the position</td></tr>
+        <tr><td><code>Register(ZoneInstance)</code></td><td><code>void</code></td><td>Register a dynamically spawned zone</td></tr>
+        <tr><td><code>Unregister(ZoneInstance)</code></td><td><code>void</code></td><td>Unregister a zone before destroying it</td></tr>
+    </table>
+
+    <h3>ZoneContext Struct</h3>
+    <table>
+        <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        <tr><td><code>encounterTableId</code></td><td><code>string</code></td><td>ID of the encounter table to use</td></tr>
+        <tr><td><code>finalEncounterChance</code></td><td><code>float</code></td><td>Final encounter probability (0&ndash;1), after modifier stacking</td></tr>
+        <tr><td><code>finalDifficultyTier</code></td><td><code>DifficultyTier</code></td><td>Final difficulty tier, after modifier bonuses</td></tr>
+        <tr><td><code>isSafe</code></td><td><code>bool</code></td><td>True if in a safe zone (no encounters)</td></tr>
+        <tr><td><code>resolvedZoneName</code></td><td><code>string</code></td><td>Name of the zone that &ldquo;won&rdquo; resolution (for debug/UI)</td></tr>
+    </table>
+
+    <h3>Dynamic Zones</h3>
+    <pre><code>// After instantiating a zone at runtime:
+api.Register(zoneInstance);
+
+// Before destroying:
+api.Unregister(zoneInstance);</code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="types">Type Reference</h2>
+<div class="section">
+    <h3>Enums</h3>
+
+    <h4>ZoneRole</h4>
+    <table>
+        <tr><th>Value</th><th>Description</th></tr>
+        <tr><td><code>Base</code></td><td>Provides the encounter table and baseline difficulty</td></tr>
+        <tr><td><code>Modifier</code></td><td>Mutates difficulty/chance on top of a Base zone</td></tr>
+        <tr><td><code>Override</code></td><td>Completely replaces everything (safe towns, story events)</td></tr>
+    </table>
+
+    <h4>ZoneShape</h4>
+    <table>
+        <tr><th>Value</th><th>Description</th></tr>
+        <tr><td><code>Square</code></td><td>4-vertex quadrilateral</td></tr>
+        <tr><td><code>Circle</code></td><td>24-segment circular approximation with adjustable radius</td></tr>
+        <tr><td><code>Polygon</code></td><td>Freeform polygon with 12 default vertices</td></tr>
+    </table>
+
+    <h4>DifficultyTier</h4>
+    <table>
+        <tr><th>Value</th><th>Int</th></tr>
+        <tr><td><code>Safe</code></td><td>0</td></tr>
+        <tr><td><code>Mild</code></td><td>1</td></tr>
+        <tr><td><code>Moderate</code></td><td>2</td></tr>
+        <tr><td><code>Dangerous</code></td><td>3</td></tr>
+        <tr><td><code>Deadly</code></td><td>4</td></tr>
+    </table>
+
+    <h4>MapPlane</h4>
+    <table>
+        <tr><th>Value</th><th>Axes</th><th>Depth</th></tr>
+        <tr><td><code>XY</code></td><td>X, Y</td><td>Z</td></tr>
+        <tr><td><code>XZ</code></td><td>X, Z</td><td>Y</td></tr>
+        <tr><td><code>YZ</code></td><td>Y, Z</td><td>X</td></tr>
+    </table>
+
+    <h3>ScriptableObjects</h3>
+
+    <h4>ZoneData</h4>
+    <p>Per-zone configuration asset. Created via the Zone Editor or <code>Create &rarr; ZoneSystem &rarr; Zone Data</code>.</p>
+    <table>
+        <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        <tr><td><code>zoneId</code></td><td><code>string</code></td><td>Unique identifier</td></tr>
+        <tr><td><code>zoneName</code></td><td><code>string</code></td><td>Display name</td></tr>
+        <tr><td><code>role</code></td><td><code>ZoneRole</code></td><td>Base, Modifier, or Override</td></tr>
+        <tr><td><code>priority</code></td><td><code>int</code></td><td>Higher wins in same-role conflicts</td></tr>
+        <tr><td><code>debugColor</code></td><td><code>Color</code></td><td>Scene visualization color (auto-set from role)</td></tr>
+        <tr><td><code>shape</code></td><td><code>ZoneShape</code></td><td>Shape type</td></tr>
+        <tr><td><code>circleRadius</code></td><td><code>float</code></td><td>Radius (Circle shape only)</td></tr>
+        <tr><td><code>polygon</code></td><td><code>List&lt;Vector2&gt;</code></td><td>Vertex positions (local to transform)</td></tr>
+    </table>
+
+    <h3>MonoBehaviours</h3>
+
+    <h4>ZoneInstance</h4>
+    <p>Placed on a scene GameObject. References a <code>ZoneData</code> asset and provides spatial queries.</p>
+    <table>
+        <tr><th>Field / Method</th><th>Description</th></tr>
+        <tr><td><code>data</code></td><td>Reference to the <code>ZoneData</code> asset</td></tr>
+        <tr><td><code>Contains(Vector3, MapPlane)</code></td><td>Returns true if the world position is inside this zone</td></tr>
+        <tr><td><code>RebuildBoundsCache()</code></td><td>Recalculates the AABB cache (call after modifying polygon)</td></tr>
+    </table>
+
+    <h4>ZonesObjectHolder</h4>
+    <p>Scene manager that holds the map plane setting and provides access to all zones.</p>
+    <table>
+        <tr><th>Field / Property</th><th>Description</th></tr>
+        <tr><td><code>mapPlane</code></td><td>Which plane the map lies on (XY, XZ, or YZ)</td></tr>
+        <tr><td><code>AllZones</code></td><td>Read-only list of all <code>ZoneInstance</code> objects in the scene</td></tr>
+    </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="utilities">Utility Classes</h2>
+<div class="section">
+    <h3>PolygonUtils</h3>
+    <p>Static math utilities for polygon operations.</p>
+    <table>
+        <tr><th>Method</th><th>Description</th></tr>
+        <tr><td><code>PointInPolygon(Vector2, List&lt;Vector2&gt;)</code></td><td>Ray-casting point-in-polygon test (Jordan curve theorem)</td></tr>
+        <tr><td><code>PointInPolygon(Vector3, List&lt;Vector2&gt;, MapPlane)</code></td><td>Projects world position to plane, then tests</td></tr>
+        <tr><td><code>Centroid(List&lt;Vector2&gt;)</code></td><td>Average center of polygon vertices</td></tr>
+        <tr><td><code>Bounds(List&lt;Vector2&gt;)</code></td><td>Axis-aligned bounding box (min, max)</td></tr>
+        <tr><td><code>PointInBounds(Vector2, Vector2, Vector2)</code></td><td>Fast AABB pre-check</td></tr>
+        <tr><td><code>Triangulate(List&lt;Vector2&gt;)</code></td><td>Ear-clipping triangulation for concave polygon rendering</td></tr>
+    </table>
+
+    <h3>MapPlaneUtility</h3>
+    <p>Converts between 3D world positions and 2D plane coordinates.</p>
+    <table>
+        <tr><th>Method</th><th>Description</th></tr>
+        <tr><td><code>ProjectToPlane(Vector3, MapPlane)</code></td><td>3D world &rarr; 2D plane coordinates</td></tr>
+        <tr><td><code>UnprojectFromPlane(Vector2, MapPlane, float)</code></td><td>2D plane coordinates &rarr; 3D world</td></tr>
+    </table>
+
+    <h3>ShapeFactory</h3>
+    <p>Generates default polygon vertices for each shape type.</p>
+    <table>
+        <tr><th>Method</th><th>Description</th></tr>
+        <tr><td><code>CreateDefault(ZoneShape)</code></td><td>Returns default vertices for the given shape</td></tr>
+        <tr><td><code>CreateSquare(float)</code></td><td>4-vertex square with given half-size</td></tr>
+        <tr><td><code>CreateCircle(float, int)</code></td><td>N-segment circle approximation</td></tr>
+        <tr><td><code>CreatePolygon(float, int)</code></td><td>Regular polygon with N vertices</td></tr>
+        <tr><td><code>RegenerateCircle(ZoneData)</code></td><td>Rebuilds circle vertices from current radius</td></tr>
+    </table>
+
+    <h3>ZoneResolver</h3>
+    <p>Pure logic for resolving overlapping zones into a single <code>ZoneContext</code>.</p>
+    <table>
+        <tr><th>Method</th><th>Description</th></tr>
+        <tr><td><code>Resolve(List&lt;ZoneData&gt;)</code></td><td>Takes overlapping zone data, applies role priority and modifier stacking, returns <code>ZoneContext</code></td></tr>
+    </table>
+
+    <h3>ZoneExporter</h3>
+    <p>Serializes scene zones to a JSON structure for runtime loading.</p>
+    <table>
+        <tr><th>Method</th><th>Description</th></tr>
+        <tr><td><code>BuildExport(ZoneInstance[], MapPlane)</code></td><td>Builds the export data structure from scene instances</td></tr>
+        <tr><td><code>ToJson(ZoneExportRoot, bool)</code></td><td>Converts to JSON string (optionally pretty-printed)</td></tr>
+    </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="export">JSON Export</h2>
+<div class="section">
+    <p>In the Zone Editor window, expand <strong>Export Zones to JSON</strong>, set the output path, and click <strong>Export Now</strong>.</p>
+
+    <h3>Loading at Runtime</h3>
+    <pre><code>string json = File.ReadAllText(Application.streamingAssetsPath + "/zones.json");
+ZoneExportRoot root = JsonUtility.FromJson&lt;ZoneExportRoot&gt;(json);</code></pre>
+
+    <h3>Export Structure</h3>
+    <p>Each zone is exported as a <code>ZoneExportEntry</code> containing all zone data fields plus the world-space polygon coordinates and transform position.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="shortcuts">Keyboard Shortcuts</h2>
+<div class="section">
+    <table>
+        <tr><th>Key</th><th>Context</th><th>Action</th></tr>
+        <tr><td><span class="key">Esc</span></td><td>Scene view, shape editing active</td><td>Stop editing the zone shape</td></tr>
+        <tr><td><span class="key">Ctrl</span> + Click</td><td>Scene view, shape editing active</td><td>Insert a vertex on the nearest edge</td></tr>
+        <tr><td><span class="key">Shift</span> + Click</td><td>Scene view, shape editing active</td><td>Delete the clicked vertex (min 3)</td></tr>
+    </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="menu">Menu Reference</h2>
+<div class="section">
+    <table>
+        <tr><th>Menu Path</th><th>Description</th></tr>
+        <tr><td>Window &rarr; Zone System &rarr; Zone Editor</td><td>Opens the main Zone Editor window</td></tr>
+        <tr><td>Window &rarr; Zone System &rarr; Settings</td><td>Selects (or creates) the ZoneEditorSettings asset</td></tr>
+        <tr><td>Window &rarr; Zone System &rarr; Documentation</td><td>Opens this documentation in your default browser</td></tr>
+        <tr><td>Jovian &rarr; ZoneSystem &rarr; Zone Editor Settings</td><td>Create menu for new ZoneEditorSettings asset</td></tr>
+        <tr><td>ZoneSystem &rarr; Zone Data</td><td>Create menu for new ZoneData asset</td></tr>
+    </table>
+</div>
+
+<hr>
+<p style="text-align: center; color: var(--fg2); font-size: 0.9em;">
+    Jovian Zone System v0.1.0 &mdash; com.jovian.zonesystem
+</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+    "name": "com.jovian.zonesystem",
+    "version": "0.1.0",
+    "displayName": "Jovian Zone System",
+    "description": "A polygon-based zone system for defining map regions with encounter difficulty, modifiers, and safe areas.",
+    "unity": "2022.3",
+    "keywords": [
+        "zone",
+        "map",
+        "encounter"
+    ],
+    "author": {
+        "name": "Jovian"
+    }
+}
