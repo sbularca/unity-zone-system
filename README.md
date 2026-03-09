@@ -46,7 +46,6 @@ Packages/com.jovian.zonesystem/
 - **Role-based colors**: Configured in ZoneEditorSettings, auto-applied on role change
 - **Zone duplication**: Independent copies with unique IDs and assets
 - **JSON export**: For runtime loading or external tools
-- **UPM package**: Standard Unity Package Manager layout with Runtime and Editor assemblies
 
 ## Menu Items
 
